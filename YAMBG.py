@@ -12,7 +12,7 @@ print("FPS: %s, COUNT %s, DURATION %s" %(fps,fcount,duration))
 image = np.zeros((500, int(duration) + 1, 3), np.uint8)
 
 frames = []
-framespos = 0
+imagecolumn = 0
 framesprocessed = 0
 framesremain = fcount % fps
 
@@ -24,14 +24,14 @@ while True:
         avg_color_int = np.array(avg_colors, dtype=np.uint8)
         frames.append(avg_color_int)
         if len(frames) == fps:
-            image[:,[framespos]] = np.average(frames, axis=0)
-            framespos += 1
+            image[:,[imagecolumn]] = np.average(frames, axis=0)
+            imagecolumn += 1
             framesprocessed += fps
             print("%s/%s" %(framesprocessed,fcount))
             frames.clear()
     else:
         if framesremain > 0 and len(frames) > 0:
-            image[:,[framespos]] = np.average(frames, axis=0)
+            image[:,[imagecolumn]] = np.average(frames, axis=0)
             framesprocessed += framesremain
             print("%s/%s" %(framesprocessed,fcount))
         cv2.imwrite(filename[0] + '.png',image)
