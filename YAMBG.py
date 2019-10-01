@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-file = "wildlife.mp4"
+file = "video.mp4"
 cap = cv2.VideoCapture(file)
 filename = file.split('.')
 fcount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
