@@ -1,20 +1,30 @@
 import cv2
 import numpy as np
+import time
 
-file = "video.mp4"
-cap = cv2.VideoCapture(file)
-filename = file.split('.')
-fcount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-fps = int(cap.get(cv2.CAP_PROP_FPS))
-duration = fcount/fps
-print("FPS: %s, COUNT %s, DURATION %s" %(fps,fcount,duration))
+#############################
+input_file = "wildlife.mp4" #<-INPUT FILENAME
+output_image_height = 500   #<-OUTPUT IMAGE HEIGHT
+width_scale = 20            #<-USEFUL WHEN INPUT VIDEO DURATION IS SHORT
+#############################
 
-image = np.zeros((500, int(duration) + 1, 3), np.uint8)
+file_name = input_file.split('.')[0]
+cap = cv2.VideoCapture(input_file)
+frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+frames_per_second = int(cap.get(cv2.CAP_PROP_FPS))
+duration = frame_count / frames_per_second
+print("FPS: %s, FRAME COUNT: %s" % (frames_per_second,frame_count))
 
-frames = []
-imagecolumn = 0
-framesprocessed = 0
-framesremain = fcount % fps
+image = np.zeros((output_image_height, (int(duration) + 1) * width_scale, 3), np.uint8)
+avg_color_per_frame = []
+color_column_index = 0
+frames_processed = 0
+frames_remain = frame_count % frames_per_second
+
+def append_to_image():
+    average_color = np.average(avg_color_per_frame, axis=0)
+    image[:,color_column_index:color_column_index + width_scale] = np.round(average_color)
+    avg_color_per_frame.clear()
 
 while True:
     flag,frame = cap.read()
@@ -22,19 +32,18 @@ while True:
         avg_color_per_row = np.average(frame, axis=0)
         avg_colors = np.average(avg_color_per_row, axis=0)
         avg_color_int = np.array(avg_colors, dtype=np.uint8)
-        frames.append(avg_color_int)
-        if len(frames) == fps:
-            image[:,[imagecolumn]] = np.average(frames, axis=0)
-            imagecolumn += 1
-            framesprocessed += fps
-            print("%s/%s" %(framesprocessed,fcount))
-            frames.clear()
+        avg_color_per_frame.append(avg_color_int)
+        if len(avg_color_per_frame) == frames_per_second:
+            append_to_image()
+            color_column_index += 1 * width_scale
+            frames_processed += frames_per_second
+            print("PROGRESS: %s/%s" % (frames_processed,frame_count))
     else:
-        if framesremain > 0 and len(frames) > 0:
-            image[:,[imagecolumn]] = np.average(frames, axis=0)
-            framesprocessed += framesremain
-            print("%s/%s" %(framesprocessed,fcount))
-        cv2.imwrite(filename[0] + '.png',image)
-        print("TOTAL FRAMES: %s, PROCESSED FRAMES %s" %(fcount,framesprocessed))
+        if frames_remain > 0 and len(avg_color_per_frame) > 0:
+            append_to_image()
+            frames_processed += frames_remain
+            print("PROGRESS: %s/%s" % (frames_processed,frame_count))
+        cv2.imwrite(file_name + '.png',image)
+        print("PROCESSED FRAMES: %s, TOTAL FRAMES %s" % (frames_processed,frame_count))
         cap.release()
         break
